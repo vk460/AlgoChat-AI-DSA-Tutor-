@@ -1,0 +1,263 @@
+.learn-workspace {
+  display: grid;
+  grid-template-columns: 460px 1fr;
+  gap: 2rem;
+  height: 100%;
+}
+
+.learn-chat-pane {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  height: 100%;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.ai-avatar-badge {
+  width: 44px;
+  height: 44px;
+  background: rgba(14, 165, 233, 0.1);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  position: relative;
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.1);
+}
+
+.status-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-deep);
+}
+
+.status-dot.online {
+  background: #10b981;
+}
+
+.ai-info h4 {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.ai-status {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.chat-messages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.message-bubble {
+  max-width: 90%;
+  position: relative;
+}
+
+.message-bubble.ai {
+  align-self: flex-start;
+}
+
+.message-bubble.user {
+  align-self: flex-end;
+}
+
+.msg-tag {
+  font-size: 0.625rem;
+  font-weight: 800;
+  color: var(--accent-primary);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+
+.msg-content {
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  font-size: 0.938rem;
+  line-height: 1.6;
+}
+
+.ai .msg-content {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+}
+
+.user .msg-content {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.chat-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.action-chip {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  transition: var(--transition-smooth);
+}
+
+.action-chip:hover {
+  background: rgba(14, 165, 233, 0.1);
+  color: var(--accent-primary);
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+.chat-input-area {
+  margin-top: auto;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  padding-left: 1.25rem;
+  background: var(--bg-input);
+  border-radius: var(--radius-full);
+}
+
+.input-wrapper input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.send-btn {
+  width: 36px;
+  height: 36px;
+  background: var(--accent-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: var(--transition-smooth);
+}
+
+.send-btn:hover {
+  transform: scale(1.05);
+  background: #0284c7;
+}
+
+.learn-content-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.content-overview {
+  padding: 1.5rem 2rem;
+}
+
+.overview-header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.75rem;
+}
+
+.overview-header .label {
+  font-size: 0.688rem;
+  font-weight: 800;
+  color: var(--accent-secondary);
+  letter-spacing: 0.1em;
+}
+
+.content-overview h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+
+.meta-row {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.813rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.meta-item.accent {
+  color: var(--accent-primary);
+}
+
+.sections-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.learn-section {
+  overflow: hidden;
+  transition: var(--transition-smooth);
+}
+
+.learn-section .section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.75rem;
+  background: transparent;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.section-icon {
+  color: var(--accent-primary);
+}
+
+.section-body {
+  padding: 0 1.75rem 1.5rem;
+  font-size: 0.938rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--glass-border);
+  padding-top: 1.25rem;
+}
+
+@media (max-width: 1024px) {
+  .learn-workspace {
+    grid-template-columns: 1fr;
+  }
+}

@@ -3,11 +3,12 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate, login as django_login
 from django.contrib.auth.models import User
-from rag_pipeline.rag_qa import ask_question, analyze_code, process_video_transcript
+from rag_pipeline.rag_qa import ask_question, analyze_code, process_video_transcript, analyze_assignment
 from rag_pipeline.transcript_service import extract_video_id, get_transcript
 from rag_pipeline.video_processor import chunk_transcript
 from rag_pipeline.video_rag import index_video_transcript, query_video_rag
-from .models import Conversation, Message
+from .models import Conversation, Message, UserProgress, User
+from django.db.models import Count, Avg
 
 @csrf_exempt
 def login_view(request):
@@ -142,6 +143,7 @@ def analyze_practice_code(request):
             stdin = data.get('stdin', '')
             goal = data.get('goal', 'Improve general coding skills')
             session_id = data.get('session_id', 'practice_default')
+            user_id = data.get('user_id')
             
             if not code:
                 return JsonResponse({'error': 'No code provided'}, status=400)
@@ -150,6 +152,25 @@ def analyze_practice_code(request):
             execution_output = run_python_code(code, input_data=stdin)
                 
             hints = analyze_code(code, execution_output, goal, session_id)
+
+            # Record progress if user is logged in
+            if user_id:
+                try:
+                    user = User.objects.filter(id=user_id).first()
+                    if user:
+                        # Extract a simple topic from the goal or code
+                        topic = goal[:50] if goal else "Generic DSA"
+                        UserProgress.objects.create(
+                            user=user,
+                            topic=topic,
+                            score=1 if "Perfect" in hints or "Correct" in hints else 0,
+                            total_score=1,
+                            progress_type='code_practice',
+                            feedback=hints[:200]
+                        )
+                except Exception as e:
+                    print(f"Failed to record progress: {e}")
+
             return JsonResponse({
                 'hints': hints,
                 'execution_output': execution_output
@@ -281,3 +302,151 @@ def video_chat(request):
             return JsonResponse({'error': str(e)}, status=500)
             
     return JsonResponse({'error': 'Method not allowed. Use POST.'}, status=405)
+def home_view(request):
+    """
+    Root view to confirm API is running.
+    """
+    return JsonResponse({
+        'status': 'success',
+        'message': 'AlgoLab AI API is running',
+        'version': '1.0.0'
+    })
+
+@csrf_exempt
+def submit_assignment(request):
+    """
+    Submits student assignment and returns AI analysis.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_id = data.get('user_id')
+            topic = data.get('topic', 'General DSA')
+            submission_text = data.get('submission_text', '')
+            
+            if not user_id or not submission_text:
+                return JsonResponse({'error': 'user_id and submission_text are required'}, status=400)
+            
+            user = User.objects.filter(id=user_id).first()
+            if not user:
+                return JsonResponse({'error': 'User not found'}, status=404)
+                
+            analysis = analyze_assignment(submission_text, topic)
+            
+            # Save progress
+            UserProgress.objects.create(
+                user=user,
+                topic=topic,
+                score=analysis.get('score', 0),
+                total_score=analysis.get('total_score', 10),
+                progress_type='assignment',
+                feedback=analysis.get('feedback', '')
+            )
+            
+            return JsonResponse(analysis)
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+            
+    return JsonResponse({'error': 'Method not allowed. Use POST.'}, status=405)
+
+@csrf_exempt
+def get_user_progress(request):
+    """
+    Returns user progress records.
+    """
+    if request.method == 'GET':
+        user_id = request.GET.get('user_id')
+        if not user_id:
+            return JsonResponse({'error': 'user_id required'}, status=400)
+            
+        try:
+            progress = UserProgress.objects.filter(user_id=user_id).order_by('-timestamp')
+            data = [{
+                'topic': p.topic,
+                'score': p.score,
+                'total_score': p.total_score,
+                'type': p.progress_type,
+                'feedback': p.feedback,
+                'timestamp': p.timestamp.isoformat()
+            } for p in progress]
+            return JsonResponse({'progress': data})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+            
+    return JsonResponse({'error': 'Method not allowed. Use GET.'}, status=405)
+
+@csrf_exempt
+def run_code_view(request):
+    """
+    Executes Python code and returns the output.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            code = data.get('code', '')
+            stdin = data.get('stdin', '')
+            if not code:
+                return JsonResponse({'error': 'No code provided'}, status=400)
+            
+            # Using run_python_code from rag_qa which is imported above
+            execution_output = run_python_code(code, input_data=stdin)
+            
+            return JsonResponse({'output': execution_output})
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Method not allowed. Use POST.'}, status=405)
+
+@csrf_exempt
+def explain_code_view(request):
+    """
+    Uses the RAG pipeline to explain a given piece of code.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            code = data.get('code', '')
+            if not code:
+                return JsonResponse({'error': 'No code provided'}, status=400)
+            
+            prompt = f"Please explain the following code clearly and concisely:\n\n{code}"
+            explanation = ask_question(prompt, session_id="explain_default", custom_history_text="")
+            
+            return JsonResponse({'explanation': explanation})
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Method not allowed. Use POST.'}, status=405)
+
+@csrf_exempt
+def student_profile_view(request):
+    """
+    Retrieves student profile information and stats.
+    """
+    if request.method == 'GET':
+        user_id = request.GET.get('user_id')
+        if not user_id:
+            return JsonResponse({'error': 'user_id required'}, status=400)
+        
+        try:
+            user = User.objects.filter(id=user_id).first()
+            if not user:
+                return JsonResponse({'error': 'User not found'}, status=404)
+            
+            progress = UserProgress.objects.filter(user_id=user_id)
+            total_exercises = progress.count()
+            
+            return JsonResponse({
+                'id': user.id,
+                'name': user.first_name,
+                'email': user.email,
+                'total_exercises': total_exercises,
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+            
+    return JsonResponse({'error': 'Method not allowed. Use GET.'}, status=405)
+

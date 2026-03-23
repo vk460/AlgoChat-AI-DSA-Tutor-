@@ -40,17 +40,32 @@ Strict Teaching Principles:
 4. Formatting:
    - Explanation -> Diagram/Example -> Question -> STOP.
 5. Adaptive: Scale difficulty based on student answers. Simplify if they are confused.
-6. Visualization:
-   - Use ASCII diagrams for stacks/lists/trees.
-   - Also include a specialized `d3-json` block for frontend visualization:
+6. Structured Output for UI:
+   - ALWAYS include a specialized `d3-json` block for frontend visualization:
      ```d3-json
      {
-       "concept": "Name",
-       "type": "linear" | "tree",
+       "algorithm": "linear_search",
+       "array": [4,7,2,9,5],
+       "target": 9,
        "steps": [
-         { "elements": ["val1", "val2"], "description": "Step 1" }
+         {"index":0,"value":4,"result":"not_equal"},
+         {"index":1,"value":7,"result":"found"}
        ]
      }
+     ```
+   - ALWAYS include a `quiz-json` block for dynamic assessments:
+     ```quiz-json
+     [
+       {
+         "question": "What is the next step?",
+         "options": ["A", "B", "C"],
+         "correct": 1
+       }
+     ]
+     ```
+   - If the student needs a complex task, provide an `assignment-prompt` block:
+     ```assignment-prompt
+     "Task: Implement Binary Search and handle the null case."
      ```
 
 Example Style:
@@ -111,6 +126,87 @@ The student asked: "{query}"
         print(f"Socratic Tutor Error: {e}")
         return f"I'm sorry, I'm having a bit of trouble connecting to my reasoning engine right now. (Error: {str(e)})"
 
+
+def process_video_transcript(transcript, session_id="video_default"):
+    """
+    Uses Groq to break a video transcript into logical 'Learning Steps'.
+    Each step includes a summary and a Socratic guiding question.
+    """
+    prompt = f"""You are a Socratic learning assistant. A student is watching a video with this transcript:
+{transcript[:6000]} # Increased context for better step identification
+
+Task:
+1. Identify 3-5 key logical concepts or steps explained in this video segment.
+2. For each concept, provide:
+   - "step": The sequence number (1, 2, 3...).
+   - "title": A short title for this step.
+   - "explanation": A very simple, 2-sentence explanation of the concept.
+   - "question": A question to check the student's understanding of this specific step.
+
+Return the response as a strict JSON object with a single key "steps" containing an array of these objects:
+{{
+  "steps": [
+    {{
+      "step": 1,
+      "title": "Concept Name",
+      "explanation": "Simple explanation...",
+      "question": "Socratic question..."
+    }}
+  ]
+}}
+"""
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.3-70b-versatile",
+            response_format={"type": "json_object"}
+        )
+        data = json.loads(chat_completion.choices[0].message.content)
+        # Handle cases where LLM returns a root object instead of array
+        if isinstance(data, dict) and "steps" in data:
+            return data["steps"]
+        return data if isinstance(data, list) else []
+    except Exception as e:
+        print(f"Transcript processing failed: {str(e)}")
+        return []
+
+def analyze_assignment(submission_text, topic, session_id="assignment_default"):
+    """
+    Evaluates a student's assignment submission out of 10.
+    """
+    prompt = f"""You are a senior DSA teacher grading a student's assignment.
+Topic: {topic}
+Student Submission:
+{submission_text}
+
+Task:
+1. Evaluate the submission's correctness, efficiency, and clarity.
+2. Give a score out of 10.
+3. Provide constructive Socratic feedback. Identify weak concepts.
+
+Return the response as a strict JSON object:
+{{
+    "score": 8,
+    "total_score": 10,
+    "feedback": "Your logic for partitioning is correct, but consider the case of an empty array.",
+    "weak_concepts": ["Edge cases", "Partitioning"]
+}}
+"""
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.3-70b-versatile",
+            response_format={"type": "json_object"}
+        )
+        return json.loads(chat_completion.choices[0].message.content)
+    except Exception as e:
+        print(f"Assignment Analysis Error: {e}")
+        return {
+            "score": 0,
+            "total_score": 10,
+            "feedback": f"Error during analysis: {str(e)}",
+            "weak_concepts": []
+        }
 
 import subprocess
 import tempfile
@@ -217,6 +313,35 @@ Question: <text>
     except Exception as e:
         print(f"Analysis Error: {e}")
         return f"Explanation: I'm having trouble analyzing your code right now.\n\nGuiding Question: Can you try running it again?\n\nHint: Check your connection.\n\n(Error: {str(e)})"
+
+def explain_code_lines(code):
+    """
+    Provides a line-by-line explanation of the provided code,
+    including time and space complexity.
+    """
+    prompt = f"""You are an elite DSA instructor. Explain the following Python code line-by-line.
+For each logical block or significant line, explain WHAT it does and WHY it's there.
+Also, include a final section on Time and Space Complexity.
+
+Format:
+Line X: <explanation>
+...
+Total Time Complexity: O(...)
+Space Complexity: O(...)
+
+Code:
+```python
+{code}
+```
+"""
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.3-70b-versatile",
+        )
+        return chat_completion.choices[0].message.content
+    except Exception as e:
+        return f"Error during explanation: {str(e)}"
 
 
 

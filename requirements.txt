@@ -1,0 +1,3 @@
+corsheaders
+Django
+faiss

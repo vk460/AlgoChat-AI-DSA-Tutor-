@@ -22,3 +22,21 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.role} at {self.timestamp}"
+class UserProgress(models.Model):
+    PROGRESS_TYPES = (
+        ('quiz', 'Quiz'),
+        ('assignment', 'Assignment'),
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='progress')
+    topic = models.CharField(max_length=255)
+    score = models.IntegerField()
+    total_score = models.IntegerField(default=10)
+    progress_type = models.CharField(max_length=20, choices=PROGRESS_TYPES)
+    feedback = models.TextField(blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.topic} ({self.score}/{self.total_score})"
