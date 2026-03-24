@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Youtube, Send, ChevronRight, ChevronLeft, Map, MessageSquare, History, Sparkles } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import Sidebar from '../components/Sidebar';
+import API_URL from '../config';
 import './VideoTutor.css';
 
 export default function VideoTutor() {
@@ -38,7 +39,7 @@ export default function VideoTutor() {
         setChatHistory([]);
 
         try {
-            const response = await fetch('http://localhost:8000/api/video/process/', {
+            const response = await fetch(`${API_URL}/api/video/process/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url: videoUrl })
@@ -73,7 +74,7 @@ export default function VideoTutor() {
         setIsChatLoading(true);
 
         try {
-            const response = await fetch('http://localhost:8000/api/video/chat/', {
+            const response = await fetch(`${API_URL}/api/video/chat/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ video_id: videoId, query: chatQuery })

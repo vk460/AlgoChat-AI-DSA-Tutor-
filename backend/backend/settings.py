@@ -32,13 +32,17 @@ SECRET_KEY = 'django-insecure-np#t+h!#rtvu$ta%^62!kk7te0q)9*8(__lvh#+($7d)dcq+it
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost 127.0.0.1 *').split()
+ALLOWED_HOSTS = ['*'] # As requested for deployment friendliness
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-CORS_ALLOW_ALL_ORIGINS = True  # For local development; in prod specify CORS_ALLOWED_ORIGINS = ['https://your-frontend.onrender.com']
+CORS_ALLOW_ALL_ORIGINS = True 
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF settings for cross-domain requests
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000 http://localhost:5173').split()
+# Add Render URL if present
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
 
 
 # Application definition

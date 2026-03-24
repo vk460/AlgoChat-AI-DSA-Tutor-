@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Trophy, Calendar, CheckCircle2, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
+import API_URL from '../config';
 
 export default function ProgressWorkspace() {
   const [progress, setProgress] = useState([]);
@@ -10,7 +11,7 @@ export default function ProgressWorkspace() {
   useEffect(() => {
     const fetchProgress = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/progress/?user_id=${user.id || 1}`);
+        const response = await fetch(`${API_URL}/api/progress/?user_id=${user.id || 1}`);
         const data = await response.json();
         if (data.progress) {
           setProgress(data.progress);

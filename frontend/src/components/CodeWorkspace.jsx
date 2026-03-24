@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import ReactMarkdown from "react-markdown";
+import API_URL from "../config";
 
 const defaultPythonCode = `def binary_search(arr, target):
     """
@@ -80,7 +81,7 @@ export default function CodeWorkspace({ onCodeChange }) {
       try {
         const user = JSON.parse(localStorage.getItem('dsa_mentor_user') || '{}');
         if (user.id) {
-          const res = await fetch(`http://localhost:8000/api/student-profile/?user_id=${user.id}`);
+          const res = await fetch(`${API_URL}/api/student-profile/?user_id=${user.id}`);
           const data = await res.json();
           setStudentProfile(data);
         }
@@ -104,7 +105,7 @@ export default function CodeWorkspace({ onCodeChange }) {
     setOutput("Executing code on backend...");
     
     try {
-      const response = await fetch("http://localhost:8000/run/", {
+      const response = await fetch(`${API_URL}/run/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, stdin }),
@@ -126,7 +127,7 @@ export default function CodeWorkspace({ onCodeChange }) {
     
     try {
       const user = JSON.parse(localStorage.getItem('dsa_mentor_user') || '{}');
-      const response = await fetch("http://localhost:8000/analyze/", {
+      const response = await fetch(`${API_URL}/analyze/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -154,7 +155,7 @@ export default function CodeWorkspace({ onCodeChange }) {
     setAiHints("Generating line-by-line explanation...");
     
     try {
-      const response = await fetch("http://localhost:8000/explain/", {
+      const response = await fetch(`${API_URL}/explain/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),

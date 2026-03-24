@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Sidebar from '../components/Sidebar';
 import MermaidChart from '../components/MermaidChart';
 import D3Visualizer from '../components/D3Visualizer';
+import API_URL from '../config';
 import './Practice.css';
 
 export default function Practice() {
@@ -27,7 +28,7 @@ export default function Practice() {
        setOutput(`*Executing logic on backend...*\n\n*Sending to AI Tutor for Socratic analysis...*`);
 
        try {
-            const response = await fetch('http://localhost:8000/analyze/', {
+            const response = await fetch(`${API_URL}/analyze/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 

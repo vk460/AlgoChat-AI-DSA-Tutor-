@@ -4,6 +4,8 @@ import { Eye, Bot } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
+import API_URL from '../config';
+
 export default function Login() {
     const { login, user } = useAuth();
     const navigate = useNavigate();
@@ -25,7 +27,7 @@ export default function Login() {
         }
 
         try {
-            const response = await fetch('http://localhost:8000/api/login/', {
+            const response = await fetch(`${API_URL}/api/login/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

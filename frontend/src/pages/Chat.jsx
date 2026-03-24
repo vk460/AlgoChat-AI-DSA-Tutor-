@@ -6,6 +6,7 @@ import Sidebar from '../components/Sidebar';
 import MermaidChart from '../components/MermaidChart';
 import D3Visualizer from '../components/D3Visualizer';
 import { useAuth } from '../context/AuthContext';
+import API_URL from '../config';
 import './Chat.css';
 
 export default function Chat() {
@@ -23,7 +24,7 @@ export default function Chat() {
   const fetchConversations = async () => {
     if (!user) return;
     try {
-        const res = await fetch(`http://localhost:8000/api/conversations/?user_id=${user.id}`);
+        const res = await fetch(`${API_URL}/api/conversations/?user_id=${user.id}`);
         if(res.ok) {
             const data = await res.json();
             setConversations(data.conversations || []);
@@ -43,7 +44,7 @@ export default function Chat() {
     setIsLoading(true);
     setMessages([]);
     try {
-        const res = await fetch(`http://localhost:8000/api/messages/${id}/`);
+        const res = await fetch(`${API_URL}/api/messages/${id}/`);
         if(res.ok) {
             const data = await res.json();
             setMessages(data.messages || []);
@@ -96,7 +97,7 @@ export default function Chat() {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/ask/', {
+      const response = await fetch(`${API_URL}/ask/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

@@ -5,6 +5,7 @@ import {
   BarChart3
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import API_URL from "../config";
 
 const modes = [
   { id: "learn", label: "Learn", icon: Brain },
@@ -63,7 +64,7 @@ export default function AlgoLayout({ children, activeMode, onModeChange, codeCon
         finalQuery = `I am currently in the Code Practice mode. My code is:\n\`\`\`python\n${codeContext}\n\`\`\`\n\nQuestion: ${inputValue}`;
       }
 
-      const response = await fetch("http://localhost:8000/ask/", {
+      const response = await fetch(`${API_URL}/ask/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

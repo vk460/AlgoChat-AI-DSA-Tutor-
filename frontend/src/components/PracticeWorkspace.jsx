@@ -4,6 +4,7 @@ import { Trophy, Heart, Lightbulb, Star, Zap, Bot, User, Send, Brain } from "luc
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import API_URL from "../config";
 
 const challenges = [
   { id: 1, title: "Bubble Sort Challenge", difficulty: "Easy", xp: 50, type: "sorting", goal: "Sort the array using adjacent swaps." },
@@ -62,7 +63,7 @@ export default function PracticeWorkspace() {
     setChatMessages(prev => [...prev, { role: "user", text: "I need a hint for this step." }]);
     
     try {
-      const response = await fetch("http://localhost:8000/ask/", {
+      const response = await fetch(`${API_URL}/ask/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -88,7 +89,7 @@ export default function PracticeWorkspace() {
     setIsChatLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8000/ask/", {
+      const response = await fetch(`${API_URL}/ask/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

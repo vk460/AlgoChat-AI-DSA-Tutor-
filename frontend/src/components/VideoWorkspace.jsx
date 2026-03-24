@@ -4,6 +4,7 @@ import { Video, Link2, Clock, ArrowRight, BookOpen, Sparkles, Send, Bot, User, P
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import API_URL from "../config";
 
 export default function VideoWorkspace() {
   const [url, setUrl] = useState("");
@@ -32,7 +33,7 @@ export default function VideoWorkspace() {
     setVideoData(null);
 
     try {
-      const response = await fetch("http://localhost:8000/video/process/", {
+      const response = await fetch(`${API_URL}/video/process/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url })
@@ -65,7 +66,7 @@ export default function VideoWorkspace() {
     setIsChatLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8000/video/chat/", {
+      const response = await fetch(`${API_URL}/video/chat/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

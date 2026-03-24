@@ -7,10 +7,15 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Mock checking for an existing session on load
+        // Automatically set a Guest user to bypass login
         const storedUser = localStorage.getItem('dsa_mentor_user');
         if (storedUser) {
             setUser(JSON.parse(storedUser));
+        } else {
+            // Provide a default guest user for seamless experience
+            const guestUser = { id: 'guest_123', username: 'Guest', email: 'guest@example.com' };
+            setUser(guestUser);
+            localStorage.setItem('dsa_mentor_user', JSON.stringify(guestUser));
         }
         setLoading(false);
     }, []);

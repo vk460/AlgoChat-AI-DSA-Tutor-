@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import D3Visualizer from "./D3Visualizer";
+import API_URL from "../config";
 
 export default function LearnWorkspace() {
   const [messages, setMessages] = useState([
@@ -72,7 +73,7 @@ export default function LearnWorkspace() {
     setIsTyping(true);
 
     try {
-      const response = await fetch("http://localhost:8000/ask/", {
+      const response = await fetch(`${API_URL}/ask/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -98,7 +99,7 @@ export default function LearnWorkspace() {
     if (!assignmentText.trim()) return;
     setIsSubmittingAssignment(true);
     try {
-      const response = await fetch("http://localhost:8000/assignment/submit/", {
+      const response = await fetch(`${API_URL}/assignment/submit/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -96,15 +96,10 @@ export default function Sidebar({ isOpen, toggleSidebar, conversations, currentS
                     <span>Settings</span>
                 </div>
                 
-                {user && (
-                    <div className="footer-item user-identity">
-                        <User size={18} />
-                        <span style={{flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{user.name}</span>
-                        <button onClick={logout} className="logout-btn" title="Sign Out">
-                            <LogOut size={16} />
-                        </button>
-                    </div>
-                )}
+                <div className="footer-item">
+                    <User size={18} />
+                    <span>Guest Mode</span>
+                </div>
             </div>
         </aside>
     );

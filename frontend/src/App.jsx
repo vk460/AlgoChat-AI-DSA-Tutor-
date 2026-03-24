@@ -17,11 +17,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           
-          <Route path="/lab" element={
-            <ProtectedRoute>
-              <AlgoLab />
-            </ProtectedRoute>
-          } />
+          <Route path="/lab" element={<AlgoLab />} />
           
           {/* Legacy routes redirected to the new unified lab */}
           <Route path="/chat" element={<Navigate to="/lab" replace />} />
