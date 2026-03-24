@@ -461,9 +461,20 @@ def student_profile_view(request):
     Retrieves student profile information and stats.
     """
     if request.method == 'GET':
-        user_id = request.GET.get('user_id')
-        if not user_id:
+        user_id_raw = request.GET.get('user_id')
+        if not user_id_raw:
             return JsonResponse({'error': 'user_id required'}, status=400)
+        
+        user_id = None
+        try:
+            user_id = int(user_id_raw)
+        except (ValueError, TypeError):
+             return JsonResponse({
+                'id': user_id_raw,
+                'name': 'Guest',
+                'email': 'guest@example.com',
+                'total_exercises': 0,
+            })
         
         try:
             user = User.objects.filter(id=user_id).first()
