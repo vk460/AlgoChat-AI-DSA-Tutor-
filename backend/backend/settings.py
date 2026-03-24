@@ -33,6 +33,9 @@ SECRET_KEY = 'django-insecure-np#t+h!#rtvu$ta%^62!kk7te0q)9*8(__lvh#+($7d)dcq+it
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost 127.0.0.1 *').split()
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 CORS_ALLOW_ALL_ORIGINS = True  # For local development; in prod specify CORS_ALLOWED_ORIGINS = ['https://your-frontend.onrender.com']
 CORS_ALLOW_CREDENTIALS = True
@@ -53,6 +56,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
