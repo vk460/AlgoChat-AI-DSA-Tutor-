@@ -1,1 +1,1 @@
-web: gunicorn --chdir backend backend.wsgi:application --bind 0.0.0.0:$PORT --timeout 120 --preload
+web: python backend/manage.py migrate && gunicorn --chdir backend backend.wsgi:application --bind 0.0.0.0:$PORT --timeout 120 --preload
