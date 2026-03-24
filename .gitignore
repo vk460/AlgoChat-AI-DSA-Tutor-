@@ -13,9 +13,6 @@ env/
 
 # Databases & Data
 db.sqlite3
-backend/data/processed/
-*.bin
-*.pkl
 
 # JavaScript / Node
 node_modules/
