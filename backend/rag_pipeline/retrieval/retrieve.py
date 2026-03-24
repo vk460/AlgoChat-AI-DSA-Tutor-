@@ -42,13 +42,12 @@ def retrieve_top_chunks(query, top_k=3):
 
     return results
 
-# Test query
-query = "What is a binary search tree?"
-
-results = retrieve_top_chunks(query)
-
-# print("\nTop Results:\n")
-
-for r in results:
-    print(r)
-    print("-"*50)
+if __name__ == "__main__":
+    # Test query
+    query = "What is a binary search tree?"
+    results = retrieve_top_chunks(query)
+    
+    # print("\nTop Results:\n")
+    for r in results:
+        print(r)
+        print("-"*50)
