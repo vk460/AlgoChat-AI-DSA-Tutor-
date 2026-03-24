@@ -88,7 +88,15 @@ def ask_rag(request):
             data = json.loads(request.body)
             query = data.get('query', '')
             session_id = data.get('session_id', 'default_session')
-            user_id = data.get('user_id')
+            user_id_raw = data.get('user_id')
+            
+            # Safe parsing of user_id as integer
+            user_id = None
+            if user_id_raw:
+                try:
+                    user_id = int(user_id_raw)
+                except (ValueError, TypeError):
+                    user_id = None
             
             if not query:
                 return JsonResponse({'error': 'No query provided'}, status=400)
@@ -143,7 +151,14 @@ def analyze_practice_code(request):
             stdin = data.get('stdin', '')
             goal = data.get('goal', 'Improve general coding skills')
             session_id = data.get('session_id', 'practice_default')
-            user_id = data.get('user_id')
+            user_id_raw = data.get('user_id')
+
+            user_id = None
+            if user_id_raw:
+                try:
+                    user_id = int(user_id_raw)
+                except (ValueError, TypeError):
+                    user_id = None
             
             if not code:
                 return JsonResponse({'error': 'No code provided'}, status=400)
@@ -259,7 +274,14 @@ def video_chat(request):
             # 2. Call LLM
             import os
             from groq import Groq
-            client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+            api_key = os.getenv("GROQ_API_KEY")
+            if not api_key:
+                return JsonResponse({
+                    'answer': "I'm sorry, my AI brain (GROQ_API_KEY) is not configured on the server yet.",
+                    'context': context_text
+                })
+
+            client = Groq(api_key=api_key)
             
             prompt = f"""
             You are an experienced and patient computer science teacher specializing in DSA.
@@ -299,7 +321,8 @@ def video_chat(request):
             })
             
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+            print(f"Video Chat Error: {e}")
+            return JsonResponse({'error': f"Internal Server Error: {str(e)}"}, status=500)
             
     return JsonResponse({'error': 'Method not allowed. Use POST.'}, status=405)
 def home_view(request):
@@ -320,8 +343,15 @@ def submit_assignment(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            user_id = data.get('user_id')
+            user_id_raw = data.get('user_id')
             topic = data.get('topic', 'General DSA')
+
+            user_id = None
+            if user_id_raw:
+                try:
+                    user_id = int(user_id_raw)
+                except (ValueError, TypeError):
+                    user_id = None
             submission_text = data.get('submission_text', '')
             
             if not user_id or not submission_text:
@@ -356,11 +386,15 @@ def get_user_progress(request):
     Returns user progress records.
     """
     if request.method == 'GET':
-        user_id = request.GET.get('user_id')
-        if not user_id:
+        user_id_raw = request.GET.get('user_id')
+        if not user_id_raw:
             return JsonResponse({'error': 'user_id required'}, status=400)
             
+        user_id = None
         try:
+            user_id = int(user_id_raw)
+        except (ValueError, TypeError):
+            return JsonResponse({'progress': []}) # Return empty progress for non-numeric IDs (like guests)
             progress = UserProgress.objects.filter(user_id=user_id).order_by('-timestamp')
             data = [{
                 'topic': p.topic,
