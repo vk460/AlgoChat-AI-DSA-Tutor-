@@ -494,17 +494,3 @@ def student_profile_view(request):
             
     return JsonResponse({'error': 'Method not allowed. Use GET.'}, status=405)
 
-
-from django.core.management import call_command
-
-@csrf_exempt
-def force_migrate_view(request):
-    """
-    Emergency view to remotely trigger migrations on the server.
-    """
-    try:
-        call_command('migrate', interactive=False)
-        return JsonResponse({'status': 'Migration successful', 'message': 'Database tables created.'})
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
