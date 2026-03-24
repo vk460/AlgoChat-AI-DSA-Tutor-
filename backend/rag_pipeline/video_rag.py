@@ -1,15 +1,10 @@
 import os
-# Lazy loading embedding model
-_model = None
-
-def get_model():
-    global _model
-    if _model is None:
-        from sentence_transformers import SentenceTransformer
-        _model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-    return _model
 
 # Storage path for video-specific indices
+def get_model():
+    from rag_pipeline.models import get_shared_model
+    return get_shared_model()
+
 VIDEO_INDEX_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "video_vectors")
 os.makedirs(VIDEO_INDEX_DIR, exist_ok=True)
 

@@ -6,7 +6,7 @@ python-dotenv==1.2.1
 sentence-transformers
 transformers
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.11.0+cpu
+torch==2.1.0+cpu
 numpy
 requests
 tqdm
@@ -16,3 +16,7 @@ gunicorn
 psycopg2-binary
 dj-database-url
 whitenoise==6.5.0
+gunicorn
+psycopg2-binary
+dj-database-url
+whitenoise

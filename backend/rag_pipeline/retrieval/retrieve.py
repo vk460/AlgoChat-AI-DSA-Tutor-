@@ -1,22 +1,22 @@
 # Lazy loading resources
-_model = None
 _index = None
 _chunks = None
 
 def get_resources():
-    global _model, _index, _chunks
-    if _model is None:
+    global _index, _chunks
+    
+    # Import shared model loader
+    from rag_pipeline.models import get_shared_model
+    model = get_shared_model()
+    
+    if _index is None:
         import faiss
         import pickle
-        from sentence_transformers import SentenceTransformer
         import os
         
         # Determine the project root (backend/)
         current_dir = os.path.dirname(os.path.abspath(__file__))
         backend_dir = os.path.dirname(os.path.dirname(current_dir))
-        
-        # Load embedding model
-        _model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
         
         # Load FAISS index
         _index = faiss.read_index(os.path.join(backend_dir, "data", "processed", "faiss_index.bin"))
@@ -25,7 +25,7 @@ def get_resources():
         with open(os.path.join(backend_dir, "data", "processed", "chunks.pkl"), "rb") as f:
             _chunks = pickle.load(f)
             
-    return _model, _index, _chunks
+    return model, _index, _chunks
 
 def retrieve_top_chunks(query, top_k=3):
     model, index, chunks = get_resources()
