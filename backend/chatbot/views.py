@@ -483,7 +483,6 @@ def student_profile_view(request):
             
             progress = UserProgress.objects.filter(user_id=user_id)
             total_exercises = progress.count()
-            
             return JsonResponse({
                 'id': user.id,
                 'name': user.first_name,
@@ -494,4 +493,18 @@ def student_profile_view(request):
             return JsonResponse({'error': str(e)}, status=500)
             
     return JsonResponse({'error': 'Method not allowed. Use GET.'}, status=405)
+
+
+from django.core.management import call_command
+
+@csrf_exempt
+def force_migrate_view(request):
+    """
+    Emergency view to remotely trigger migrations on the server.
+    """
+    try:
+        call_command('migrate', interactive=False)
+        return JsonResponse({'status': 'Migration successful', 'message': 'Database tables created.'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 

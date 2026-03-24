@@ -20,7 +20,7 @@ from chatbot.views import (
     home_view, ask_rag, analyze_practice_code, login_view, 
     get_conversations, get_messages, process_video, 
     video_chat, submit_assignment, get_user_progress,
-    run_code_view, explain_code_view, student_profile_view
+    run_code_view, explain_code_view, student_profile_view, force_migrate_view
 )
 
 urlpatterns = [
@@ -40,4 +40,5 @@ urlpatterns = [
     path('assignment/submit/', submit_assignment, name='submit_assignment'),
     path('progress/', get_user_progress, name='get_user_progress'),
     path('api/student-profile/', student_profile_view, name='student_profile'),
+    path('force-migrate/', force_migrate_view, name='force_migrate'),
 ]
