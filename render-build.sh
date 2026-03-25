@@ -10,3 +10,6 @@ python backend/manage.py migrate
 
 # Collect static files
 python backend/manage.py collectstatic --no-input
+
+# Collect static files
+python backend/manage.py collectstatic --no-input

@@ -51,6 +51,12 @@ if FRONTEND_URL:
     if FRONTEND_URL not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(FRONTEND_URL)
 
+# Add specific Frontend URL if present (e.g. from Vercel)
+FRONTEND_URL = os.getenv('FRONTEND_URL')
+if FRONTEND_URL:
+    if FRONTEND_URL not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(FRONTEND_URL)
+
 
 # Application definition
 

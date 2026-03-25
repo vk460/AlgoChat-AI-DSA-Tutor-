@@ -9,6 +9,10 @@ venv/
 env/
 .venv/
 venv_fixed/
+venv/
+env/
+.venv/
+venv_fixed/
 venv_new/
 old_venv/
 .pytest_cache/
