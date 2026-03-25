@@ -40,9 +40,16 @@ CORS_ALLOW_CREDENTIALS = True
 
 # CSRF settings for cross-domain requests
 CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:3000 http://localhost:5173').split()
+
 # Add Render URL if present
 if RENDER_EXTERNAL_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
+
+# Add specific Frontend URL if present (e.g. from Vercel)
+FRONTEND_URL = os.getenv('FRONTEND_URL')
+if FRONTEND_URL:
+    if FRONTEND_URL not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(FRONTEND_URL)
 
 
 # Application definition

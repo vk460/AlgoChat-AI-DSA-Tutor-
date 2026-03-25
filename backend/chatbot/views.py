@@ -216,7 +216,9 @@ def process_video(request):
             
             transcript = get_transcript(video_id)
             if not transcript:
-                return JsonResponse({'error': 'Could not extract transcript. Video might not have captions.'}, status=404)
+                return JsonResponse({
+                    'error': 'Could not extract transcript. YouTube might be blocking the request or the video lacks captions. Please try another video or try again later.'
+                }, status=422)
             
             # Phase 5: Create Video RAG Index
             # Fetch snippet version for indexing
@@ -390,11 +392,12 @@ def get_user_progress(request):
         if not user_id_raw:
             return JsonResponse({'error': 'user_id required'}, status=400)
             
-        user_id = None
         try:
             user_id = int(user_id_raw)
         except (ValueError, TypeError):
             return JsonResponse({'progress': []}) # Return empty progress for non-numeric IDs (like guests)
+
+        try:
             progress = UserProgress.objects.filter(user_id=user_id).order_by('-timestamp')
             data = [{
                 'topic': p.topic,
