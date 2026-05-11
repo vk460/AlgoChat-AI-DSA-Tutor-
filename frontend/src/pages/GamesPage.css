@@ -1,0 +1,151 @@
+.games-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: #fff;
+}
+
+.games-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.games-header h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.game-card {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 2rem;
+  padding: 2.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.game-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 40px rgba(var(--accent-rgb), 0.2);
+}
+
+.game-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+}
+
+.game-card h3 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.game-card p {
+  color: #94a3b8;
+  margin-bottom: 2rem;
+}
+
+.play-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 2rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Challenge View */
+.challenge-view {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.back-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.challenge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.level-badge {
+  background: #3b82f6;
+  padding: 0.4rem 1rem;
+  border-radius: 1rem;
+  font-weight: bold;
+}
+
+.code-viewer {
+  background: #0f172a;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  margin-bottom: 2rem;
+  font-family: 'Fira Code', monospace;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.option-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+  border-radius: 1rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.option-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.option-btn.selected {
+  background: #3b82f6;
+  border-color: #60a5fa;
+}
+
+.feedback-area {
+  margin-top: 2rem;
+  text-align: center;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.correct { color: #4ade80; font-weight: bold; }
+.wrong { color: #ef4444; font-weight: bold; }
+
+.next-btn {
+  margin-top: 1rem;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}

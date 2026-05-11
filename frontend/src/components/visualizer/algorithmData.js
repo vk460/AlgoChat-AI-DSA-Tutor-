@@ -49,6 +49,13 @@ export const ALGORITHM_META = {
     stable: "N/A",
     desc: "Last-In-First-Out (LIFO) data structure with push and pop.",
   },
+  bst: {
+    label: "Binary Search Tree",
+    time: "O(log n)",
+    space: "O(n)",
+    stable: "N/A",
+    desc: "A tree-based structure where left child < parent and right child > parent.",
+  },
 };
 
 // ---------- LINEAR SEARCH ----------
@@ -363,6 +370,58 @@ export function generateStackOps() {
   return { algorithm: "stack", steps };
 }
 
+// ---------- BST OPERATIONS ----------
+export function generateBST(inputArr) {
+  const arr = [...inputArr].slice(0, 7); // Keep it small for visualization
+  const steps = [];
+  let root = null;
+  let nodeId = 0;
+
+  function insert(node, value, path = []) {
+    if (!node) {
+      const newNode = { id: nodeId++, value, left: null, right: null };
+      steps.push({
+        type: "insert", action: "create_node",
+        value, path: [...path], nodeId: newNode.id,
+        description: `Insert ${value} at its final position in the tree.`,
+        calculation: `Position found. New node ${value} created.`
+      });
+      return newNode;
+    }
+
+    path.push(node.id);
+    steps.push({
+      type: "compare", action: "compare_node",
+      value, currentNode: node.value, nodeId: node.id, path: [...path],
+      description: `Comparing ${value} with current node ${node.value}.`,
+      calculation: `${value} ${value < node.value ? "<" : ">"} ${node.value} → move ${value < node.value ? "LEFT" : "RIGHT"}`
+    });
+
+    if (value < node.value) {
+      node.left = insert(node.left, value, path);
+    } else {
+      node.right = insert(node.right, value, path);
+    }
+    return node;
+  }
+
+  arr.forEach(val => {
+    root = insert(root, val);
+  });
+
+  // Generate tree structure for D3
+  function getTreeData(node) {
+    if (!node) return null;
+    return {
+      id: node.id,
+      value: node.value,
+      children: [getTreeData(node.left), getTreeData(node.right)].filter(Boolean)
+    };
+  }
+
+  return { algorithm: "bst", array: arr, steps, treeData: getTreeData(root) };
+}
+
 // ---------- DISPATCHER ----------
 export function generateAlgorithmData(algorithmId, customArray) {
   const arr = customArray || randomArray(8, 50);
@@ -384,6 +443,8 @@ export function generateAlgorithmData(algorithmId, customArray) {
       return generateQuickSort(arr);
     case "stack":
       return generateStackOps();
+    case "bst":
+      return generateBST(arr);
     default:
       return generateBubbleSort(arr);
   }

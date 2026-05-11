@@ -20,6 +20,17 @@ old_venv/
 
 # Databases & Data
 db.sqlite3
+backend/data/
+mit_courses/
+
+# Temporary / Test files
+backend/test_*.py
+backend/debug_*.py
+backend/repro_*.py
+backend/verify_*.py
+backend/corrupt_file.py
+backend/list_urls.py
+backend/ffmpeg.zip
 
 # JavaScript / Node
 node_modules/

@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { 
     Plus, Search, Code2, Clock, Settings, 
     PanelLeftClose, BookOpen, PenTool, LayoutDashboard,
-    User, LogOut, Bot, Play
+    User, LogOut, Bot, Play, Gamepad2, BarChart3
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
@@ -89,6 +89,16 @@ export default function Sidebar({ isOpen, toggleSidebar, conversations, currentS
                 <NavLink to="/video-tutor" className={({isActive}) => `footer-item video-link ${isActive ? 'active' : ''}`}>
                     <Play size={18} color="#ff0000"/>
                     <span>Video Tutor</span>
+                </NavLink>
+
+                <NavLink to="/games" className={({isActive}) => `footer-item games-link ${isActive ? 'active' : ''}`}>
+                    <Gamepad2 size={18} color="#f59e0b"/>
+                    <span>Games Hub</span>
+                </NavLink>
+
+                <NavLink to="/progress" className={({isActive}) => `footer-item progress-link ${isActive ? 'active' : ''}`}>
+                    <BarChart3 size={18} color="#8b5cf6"/>
+                    <span>My Progress</span>
                 </NavLink>
 
                 <div className="footer-item">

@@ -97,7 +97,7 @@ export default function Chat() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/ask/`, {
+      const response = await fetch(`${API_URL}/api/ask/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

@@ -63,7 +63,7 @@ export default function PracticeWorkspace() {
     setChatMessages(prev => [...prev, { role: "user", text: "I need a hint for this step." }]);
     
     try {
-      const response = await fetch(`${API_URL}/ask/`, {
+      const response = await fetch(`${API_URL}/api/ask/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -89,7 +89,7 @@ export default function PracticeWorkspace() {
     setIsChatLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/ask/`, {
+      const response = await fetch(`${API_URL}/api/ask/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

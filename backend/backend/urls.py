@@ -15,12 +15,13 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from chatbot.views import (
     home_view, ask_rag, analyze_practice_code, login_view, 
     get_conversations, get_messages, process_video, 
     video_chat, submit_assignment, get_user_progress,
-    run_code_view, explain_code_view, student_profile_view
+    run_code_view, explain_code_view, student_profile_view,
+    analyze_live_view, submit_code_view, get_intelligence_reports
 )
 
 urlpatterns = [
@@ -42,13 +43,19 @@ urlpatterns = [
     path('ask/', ask_rag, name='ask'),
     path('ask', ask_rag, name='ask_no_slash'),
     
-    # Analysis & Code
-    path('api/analyze/', analyze_practice_code, name='analyze_api'),
-    path('analyze/', analyze_practice_code, name='analyze'),
+    # Analysis & Code Intelligence
+    path('api/analyze-live/', analyze_live_view, name='analyze_live'),
+    path('api/submit-code/', submit_code_view, name='submit_code'),
+    path('api/intelligence-reports/', get_intelligence_reports, name='intelligence_reports'),
     path('api/run/', run_code_view, name='run_code_api'),
-    path('run/', run_code_view, name='run_code'),
+    path('api/execute/', run_code_view, name='execute_code_api'),
     path('api/explain/', explain_code_view, name='explain_code_api'),
+    path('api/student-profile/', student_profile_view, name='student_profile'),
+    
+    # Legacy / Root paths
+    path('run/', run_code_view, name='run_code'),
     path('explain/', explain_code_view, name='explain_code'),
+    path('analyze/', analyze_practice_code, name='analyze'),
     
     # Video RAG
     path('api/video/process/', process_video, name='process_video_api'),
@@ -59,9 +66,12 @@ urlpatterns = [
     # Progress & Profiles
     path('api/progress/', get_user_progress, name='get_user_progress_api'),
     path('progress/', get_user_progress, name='get_user_progress'),
-    path('api/student-profile/', student_profile_view, name='student_profile'),
     
     # Assignments
     path('api/assignment/submit/', submit_assignment, name='submit_assignment_api'),
     path('assignment/submit/', submit_assignment, name='submit_assignment'),
+    
+    # New Modular Apps
+    path('api/games/', include('algo_games.urls')),
+    path('api/progress/', include('progress.urls')),
 ]

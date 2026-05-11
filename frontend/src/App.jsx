@@ -23,6 +23,8 @@ function App() {
           <Route path="/chat" element={<Navigate to="/lab" replace />} />
           <Route path="/practice" element={<Navigate to="/lab" replace />} />
           <Route path="/video-tutor" element={<Navigate to="/lab" replace />} />
+          <Route path="/games" element={<Navigate to="/lab" replace />} />
+          <Route path="/progress" element={<Navigate to="/lab" replace />} />
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -108,7 +108,7 @@ export default function VisualizeWorkspace() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="viz-top-bar glass-panel-strong"
+        className="h-16 flex items-center justify-between px-6 bg-white/5 border border-white/5 rounded-2xl mb-6 shadow-xl"
       >
         <div className="viz-algo-tabs">
           {ALGORITHM_IDS.map((id) => (
@@ -183,9 +183,10 @@ export default function VisualizeWorkspace() {
       <div className="viz-split-layout">
         {/* LEFT: Canvas */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="viz-canvas glass-panel-strong glow-border grid-bg"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="glass-card flex-1 p-8 relative overflow-hidden flex flex-col shadow-2xl"
+          style={{ background: 'radial-gradient(circle at top right, rgba(59, 130, 246, 0.05), transparent)' }}
         >
           <div className="viz-canvas-header">
             <div className="flex items-center gap-2">

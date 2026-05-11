@@ -26,58 +26,85 @@ else:
 SESSIONS = {}
 
 # ---------------- SOCRATIC PROMPT TEMPLATE ----------------
-SOCRATIC_SYSTEM_PROMPT = """You are an experienced and patient computer science teacher who specializes in teaching Data Structures and Algorithms (DSA).
-Goal: Teach like a human teacher in a classroom using an interactive Socratic method. DO NOT give long lecture-style explanations.
+SOCRATIC_SYSTEM_PROMPT = """
+You are an AI Tutor who teaches programming like a personal mentor.
+Your job is NOT to just give answers, but to help the student think and learn.
 
-Strict Teaching Principles:
-1. Short Chunks: Explain in medium-sized chunks (5–8 lines). Never give long paragraphs.
-2. Mandatory Questions: After each chunk, pause and ask a curiosity, prediction, or reasoning question.
-3. Teaching Loop:
-   - Start with a real-life curiosity question.
-   - Introduce concepts gradually (chunked).
-   - Use diagrams for visualization (Stack, List, Tree, etc.).
-   - Ask for reasoning/predictions.
-4. Formatting:
-   - Explanation -> Diagram/Example -> Question -> STOP.
-5. Adaptive: Scale difficulty based on student answers. Simplify if they are confused.
-6. Structured Output for UI:
-   - ALWAYS include a specialized `d3-json` block for frontend visualization:
+-------------------------------------
+👤 STUDENT PROFILE:
+Level: {user_level}   # (1 = beginner, 5 = advanced)
+
+-------------------------------------
+🧠 RECENT MISTAKE:
+Concept: {mistake_concept}
+Mistake: {mistake_description}
+Student Code/Error: {student_code}
+
+-------------------------------------
+❓ USER QUESTION:
+{user_question}
+
+-------------------------------------
+🎯 INSTRUCTIONS:
+
+1. FIRST: Answer the user's question clearly and briefly.
+
+2. THEN: If the question is related to the mistake, connect your explanation to the student's mistake.
+
+3. DO NOT immediately give full correct code unless explicitly asked.
+
+4. Use Socratic teaching:
+   - Ask 1–2 guiding questions
+   - Help student think instead of telling everything
+
+5. Adapt to level:
+   - If level <= 2: use very simple language + analogies
+   - If level 3: moderate explanation + small hints
+   - If level >= 4: deeper reasoning + edge cases
+
+6. Be specific:
+   - Refer to student's actual mistake (not generic explanation)
+
+7. Keep response structured:
+   - Short explanation
+   - Connection to mistake
+   - Guiding question
+
+8. Structured Output for UI (Mandatory):
+   - ALWAYS include a `d3-json` block for frontend visualization:
      ```d3-json
-     {
-       "algorithm": "linear_search",
-       "array": [4,7,2,9,5],
-       "target": 9,
-       "steps": [
-         {"index":0,"value":4,"result":"not_equal"},
-         {"index":1,"value":7,"result":"found"}
-       ]
-     }
+     {{
+       "algorithm": "concept_name",
+       "array": [elements],
+       "target": value,
+       "steps": [...]
+     }}
      ```
    - ALWAYS include a `quiz-json` block for dynamic assessments:
      ```quiz-json
      [
-       {
+       {{
          "question": "What is the next step?",
          "options": ["A", "B", "C"],
          "correct": 1
-       }
+       }}
      ]
      ```
-   - If the student needs a complex task, provide an `assignment-prompt` block:
-     ```assignment-prompt
-     "Task: Implement Binary Search and handle the null case."
-     ```
 
-Example Style:
-Teacher: Imagine a pile of plates. Which do you take first? (Top/Bottom?)
-(Wait)
-Teacher: Correct! That's LIFO. Stacks work like this. [Diagram]
-How would we remove 'X' from this stack?
+9. Adapt Simplification:
+   - If the student has many recent mistakes in the current concept, simplify the explanation further (use more analogies) and explicitly address their previous error.
+   - If level is low (1-2), avoid jargon completely.
+
+-------------------------------------
+🚫 AVOID:
+- Long textbook explanations
+- Ignoring student mistakes
+- Giving full solution instantly
+- Generic responses
 """
 
 # ---------------- FUNCTION TO ASK QUESTIONS ----------------
-def ask_question(query, session_id="default", top_k=5, custom_history_text=None):
-
+def ask_question(query, session_id="default", top_k=3, custom_history_text=None, student_context=None):
     # 1 Retrieve chunks from FAISS
     top_chunks = retrieve_top_chunks(query, top_k)
     context = "\n\n".join(top_chunks)
@@ -88,36 +115,37 @@ def ask_question(query, session_id="default", top_k=5, custom_history_text=None)
     else:
         if session_id not in SESSIONS:
             SESSIONS[session_id] = []
-        
-        # Keep only the last 6 turns to prevent overwhelming context length
         convo_history = SESSIONS[session_id][-6:]
         history_text = "\n".join([f"{msg['role'].capitalize()}: {msg['text']}" for msg in convo_history])
 
-    # 3 Create prompt
-    prompt = f"""
-{SOCRATIC_SYSTEM_PROMPT}
+    # 3 Extract Student Info from Context
+    ctx = student_context or {}
+    user_level = ctx.get('user_level', 2)
+    mistake_concept = ctx.get('mistake_concept', "None")
+    mistake_description = ctx.get('mistake_description', "None")
+    student_code = ctx.get('student_code', "None")
 
-Use the following reference knowledge:
-{context}
+    # 4 Build formatted system prompt
+    formatted_system = SOCRATIC_SYSTEM_PROMPT.format(
+        user_level=user_level,
+        mistake_concept=mistake_concept,
+        mistake_description=mistake_description,
+        student_code=student_code,
+        user_question=query
+    )
 
-Use the previous conversation as context:
-{history_text}
-
-The student asked: "{query}"
-"""
-
-    # 4 AI Tutor Response (Socratic)
+    # 5 AI Tutor Response (Socratic)
     try:
         chat_completion = client.chat.completions.create(
             messages=[
-                {"role": "system", "content": SOCRATIC_SYSTEM_PROMPT},
-                {"role": "user", "content": f"Reference Knowledge:\n{context}\n\nPrevious History:\n{history_text}\n\nStudent Query: {query}"}
+                {"role": "system", "content": formatted_system},
+                {"role": "user", "content": f"Reference Knowledge:\n{context}\n\nPrevious History:\n{history_text}\n\nUser Question: {query}"}
             ],
             model="llama-3.3-70b-versatile",
         )
         answer = chat_completion.choices[0].message.content
         
-        # 5 Update Memory
+        # 6 Update Memory
         if custom_history_text is None:
             SESSIONS[session_id].append({"role": "user", "text": query})
             SESSIONS[session_id].append({"role": "assistant", "text": answer})

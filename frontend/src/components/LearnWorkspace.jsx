@@ -73,7 +73,7 @@ export default function LearnWorkspace() {
     setIsTyping(true);
 
     try {
-      const response = await fetch(`${API_URL}/ask/`, {
+      const response = await fetch(`${API_URL}/api/ask/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -128,16 +128,16 @@ export default function LearnWorkspace() {
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="glass-panel-strong glow-border flex flex-col min-h-0"
+          className="glass-card flex flex-col min-h-0 overflow-hidden shadow-2xl"
         >
-          <div className="flex items-center gap-3 p-4 border-b border-border/40">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-              <Bot className="w-4 h-4 text-primary" />
+          <div className="flex items-center gap-3 p-5 border-b border-white/5 bg-white/5">
+            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center glow-primary">
+              <Bot className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">AI Tutor</p>
-              <p className="text-[10px] text-success flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" /> Online
+              <p className="text-sm font-bold text-foreground">Socratic Tutor</p>
+              <p className="text-[10px] text-success flex items-center gap-1 font-bold uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" /> Live Support
               </p>
             </div>
           </div>
@@ -153,10 +153,10 @@ export default function LearnWorkspace() {
                     className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+                      className={`max-w-[85%] rounded-2xl px-5 py-4 text-sm leading-relaxed whitespace-pre-wrap ${
                         msg.role === "user"
-                          ? "bg-primary/20 text-foreground border border-primary/30"
-                          : "glass-panel text-foreground"
+                          ? "bg-primary text-white rounded-tr-none shadow-lg shadow-primary/20 ml-auto"
+                          : "glass-card rounded-tl-none border-white/5 shadow-xl"
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
@@ -207,13 +207,13 @@ export default function LearnWorkspace() {
             </div>
           </ScrollArea>
 
-          <div className="p-3 border-t border-border/40 flex gap-2">
-            <Input
+          <div className="p-3 border-t border-border/40 flex gap-2 relative z-20">
+            <input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
               placeholder="Ask anything about DSA..."
-              className="bg-muted/50 border-border/50 text-sm"
+              className="flex-1 bg-muted/50 border border-border/50 rounded-lg px-4 py-2 text-sm outline-none focus:border-primary/50 transition-all"
             />
             <Button size="icon" onClick={handleSend} disabled={!inputValue.trim() || isTyping} className="shrink-0">
               <Send className="w-4 h-4" />
@@ -231,20 +231,26 @@ export default function LearnWorkspace() {
             <div className="space-y-4 pb-12">
               {/* Dynamic Visualization */}
               {currentD3Data ? (
-                <div className="glass-panel-strong glow-border p-4 h-[350px]">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-primary" />
-                      <h3 className="font-display font-bold text-lg uppercase tracking-wider">{(currentD3Data.algorithm || "").replace('_', ' ')}</h3>
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="glass-card p-6 h-[400px] shadow-2xl relative overflow-hidden"
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/20 text-primary">
+                        <Zap className="w-5 h-5" />
+                      </div>
+                      <h3 className="font-display font-bold text-lg uppercase tracking-widest">{(currentD3Data.algorithm || "").replace('_', ' ')}</h3>
                     </div>
-                    <Button size="sm" variant="ghost" onClick={() => setCurrentD3Data({...currentD3Data})} className="text-[10px] h-7">RESTART</Button>
+                    <Button size="sm" variant="outline" onClick={() => setCurrentD3Data({...currentD3Data})} className="text-[10px] h-8 font-bold tracking-widest border-white/10 hover:border-primary/50">RESTART</Button>
                   </div>
                   <D3Visualizer data={currentD3Data} />
-                </div>
+                </motion.div>
               ) : (
-                <div className="glass-panel p-8 text-center border-dashed">
-                  <Eye className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground italic">Ask the AI to explain a concept to see a live visualization here.</p>
+                <div className="glass-card p-12 text-center border-dashed border-white/5 bg-white/2">
+                  <Eye className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+                  <p className="text-sm text-muted-foreground italic max-w-xs mx-auto">Ask the AI to explain a concept to trigger a high-performance D3 simulation here.</p>
                 </div>
               )}
 

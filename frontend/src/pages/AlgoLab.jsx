@@ -6,9 +6,10 @@ import PracticeWorkspace from '../components/PracticeWorkspace';
 import CodeWorkspace from '../components/CodeWorkspace';
 import VideoWorkspace from '../components/VideoWorkspace';
 import ProgressWorkspace from '../components/ProgressWorkspace';
+import GamesWorkspace from '../components/GamesWorkspace';
 
 export default function AlgoLab() {
-  const [activeMode, setActiveMode] = useState('learn');
+  const [activeMode, setActiveMode] = useState('code');
   const [currentCode, setCurrentCode] = useState("");
 
   const renderWorkspace = () => {
@@ -23,6 +24,8 @@ export default function AlgoLab() {
         return <CodeWorkspace onCodeChange={setCurrentCode} />;
       case 'video':
         return <VideoWorkspace />;
+      case 'games':
+        return <GamesWorkspace />;
       case 'progress':
         return <ProgressWorkspace />;
       default:
