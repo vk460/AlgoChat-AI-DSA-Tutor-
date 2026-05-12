@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import D3Visualizer from "./D3Visualizer";
+import { DiagnosticModal } from "./DiagnosticModal";
 import API_URL from "../config";
 
 export default function LearnWorkspace() {
@@ -30,9 +31,22 @@ export default function LearnWorkspace() {
   const [assignmentText, setAssignmentText] = useState("");
   const [assignmentFeedback, setAssignmentFeedback] = useState(null);
   const [isSubmittingAssignment, setIsSubmittingAssignment] = useState(false);
+  const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
+  const [diagnosticQuestions, setDiagnosticQuestions] = useState([]);
+  const [diagnosticConcept, setDiagnosticConcept] = useState('');
+  const [pendingQuestion, setPendingQuestion] = useState(null); // original question before quiz
+  const [pipeline, setPipeline] = useState(null); // progress pipeline steps
   const scrollRef = useRef(null);
   
   const user = JSON.parse(localStorage.getItem('dsa_mentor_user') || '{}');
+  
+  // localStorage tracks quizzed concepts as a cache (backend DB is the real source of truth)
+  const getQuizzedConcepts = () => JSON.parse(localStorage.getItem('quizzed_concepts') || '{}');
+  const markConceptQuizzed = (concept) => {
+    const existing = getQuizzedConcepts();
+    existing[concept.toLowerCase().trim()] = true;
+    localStorage.setItem('quizzed_concepts', JSON.stringify(existing));
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -40,23 +54,41 @@ export default function LearnWorkspace() {
     }
   }, [messages, isTyping]);
 
-  const parseStructuredBlocks = (content) => {
+  const parseStructuredBlocks = (content, extraData = {}) => {
+    // ── D3 Diagram Detection (3 patterns for different AI output styles) ───────
+    let d3Data = null;
+
+    // Pattern 1: explicit ```d3-json block
     const d3Match = content.match(/```d3-json\s+([\s\S]*?)```/);
     if (d3Match) {
-      try {
-        setCurrentD3Data(JSON.parse(d3Match[1]));
-      } catch (e) { console.error("D3 JSON Parse Error", e); }
+      try { d3Data = JSON.parse(d3Match[1]); } catch (e) { console.error("D3 parse error (d3-json)", e); }
     }
 
-    const quizMatch = content.match(/```quiz-json\s+([\s\S]*?)```/);
-    if (quizMatch) {
-      try {
-        setCurrentQuiz(JSON.parse(quizMatch[1]));
-        setQuizSubmitted(false);
-        setQuizAnswers({});
-      } catch (e) { console.error("Quiz JSON Parse Error", e); }
+    // Pattern 2: any ```json block containing an "algorithm" key
+    if (!d3Data) {
+      const allJsonBlocks = [...content.matchAll(/```(?:json)?\s*\n?([\s\S]*?)```/g)];
+      for (const m of allJsonBlocks) {
+        try {
+          const parsed = JSON.parse(m[1].trim());
+          if (parsed && parsed.algorithm) { d3Data = parsed; break; }
+        } catch (_) {}
+      }
     }
 
+    // Pattern 3: [ARRAY_TRACE]...[/ARRAY_TRACE] inline tags
+    if (!d3Data) {
+      const traceMatch = content.match(/\[ARRAY_TRACE\]([\s\S]*?)\[\/ARRAY_TRACE\]/);
+      if (traceMatch) {
+        try { d3Data = JSON.parse(traceMatch[1].trim()); } catch (e) { console.error("D3 parse error (ARRAY_TRACE)", e); }
+      }
+    }
+
+    if (d3Data) {
+      console.log("  [UI] D3 diagram detected, algorithm:", d3Data.algorithm);
+      setCurrentD3Data(d3Data);
+    }
+
+    // ── Assignment Prompt ──────────────────────────────────────────────────────
     const assignmentMatch = content.match(/```assignment-prompt\s+([\s\S]*?)```/);
     if (assignmentMatch) {
       setAssignmentPrompt(assignmentMatch[1].replace(/"/g, ''));
@@ -64,6 +96,7 @@ export default function LearnWorkspace() {
       setAssignmentText("");
     }
   };
+
 
   const handleSend = async () => {
     if (!inputValue.trim()) return;
@@ -85,7 +118,18 @@ export default function LearnWorkspace() {
       const data = await response.json();
       if (data.answer) {
         setMessages((prev) => [...prev, { id: Date.now() + 1, role: "ai", content: data.answer }]);
-        parseStructuredBlocks(data.answer);
+        parseStructuredBlocks(data.answer, data);
+
+        // DIRECT quiz handling — backend is source of truth
+        // If backend says show_quiz=True and quiz_data exists → ALWAYS open modal
+        if (data.show_quiz && Array.isArray(data.quiz_data) && data.quiz_data.length > 0) {
+          const concept = data.current_concept || '';
+          console.log("  [UI] Opening Diagnostic Modal for:", concept, "(", data.quiz_data.length, "questions)");
+          setPendingQuestion(userMsg.content);
+          setDiagnosticConcept(concept);
+          setDiagnosticQuestions(data.quiz_data);
+          setIsDiagnosticOpen(true);
+        }
       }
     } catch (error) {
       console.error("AI Error:", error);
@@ -123,6 +167,63 @@ export default function LearnWorkspace() {
 
   return (
     <div className="flex flex-col gap-4 h-full workspace-animation">
+      {/* Gated Diagnostic Modal - Centered Blocking Pop-up */}
+      <AnimatePresence>
+        {isDiagnosticOpen && diagnosticQuestions.length > 0 && (
+          <DiagnosticModal 
+            questions={diagnosticQuestions}
+            concept={diagnosticConcept}
+            onComplete={async (answers) => {
+              // Mark concept as quizzed in localStorage (survives server restarts)
+              markConceptQuizzed(diagnosticConcept);
+              setIsDiagnosticOpen(false);
+              setDiagnosticQuestions([]);
+
+              // Start the progress pipeline
+              const steps = [
+                { id: 1, label: 'Quiz Completed', done: true },
+                { id: 2, label: 'Saving to Memory', done: false },
+                { id: 3, label: 'Analyzing Knowledge', done: false },
+                { id: 4, label: 'Generating Answer', done: false },
+              ];
+              setPipeline(steps);
+
+              // Simulate pipeline steps
+              await new Promise(r => setTimeout(r, 800));
+              setPipeline(p => p.map(s => s.id === 2 ? {...s, done: true} : s));
+              await new Promise(r => setTimeout(r, 800));
+              setPipeline(p => p.map(s => s.id === 3 ? {...s, done: true} : s));
+
+              // Auto-answer original question
+              if (pendingQuestion) {
+                setIsTyping(true);
+                try {
+                  const res = await fetch(`${API_URL}/api/ask/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      query: pendingQuestion,
+                      session_id: 'learn_session_' + (user.id || 'guest'),
+                      user_id: user.id || 1
+                    })
+                  });
+                  const data = await res.json();
+                  setPipeline(p => p.map(s => s.id === 4 ? {...s, done: true} : s));
+                  if (data.answer) {
+                    setMessages(prev => [...prev, { id: Date.now(), role: 'ai', content: data.answer }]);
+                    parseStructuredBlocks(data.answer, data);
+                  }
+                } catch(e) { console.error(e); }
+                finally { setIsTyping(false); setPendingQuestion(null); }
+              }
+
+              // Clear pipeline after 3s
+              setTimeout(() => setPipeline(null), 3000);
+            }} 
+          />
+        )}
+      </AnimatePresence>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
         {/* Left — AI Tutor Chat */}
         <motion.div
@@ -175,7 +276,13 @@ export default function LearnWorkspace() {
                           let processed = (line || "")
                             .replace(/\*\*(.*?)\*\*/g, '<strong class="text-primary">$1</strong>')
                             .replace(/\*(.*?)\*/g, '<em class="text-muted-foreground">$1</em>')
-                            .replace(/`(.*?)`/g, '<code class="bg-muted px-1.5 py-0.5 rounded text-accent font-mono text-xs">$1</code>');
+                            .replace(/`(.*?)`/g, '<code class="bg-muted px-1.5 py-0.5 rounded text-accent font-mono text-xs">$1</code>')
+                            // Color tag rendering: !!yellow[text]!! !!red[text]!! !!green[text]!!
+                            .replace(/!!yellow\[(.*?)\]!!/g, '<span class="text-yellow-400 font-bold">$1</span>')
+                            .replace(/!!red\[(.*?)\]!!/g, '<span class="text-red-400 font-bold">$1</span>')
+                            .replace(/!!green\[(.*?)\]!!/g, '<span class="text-green-400 font-bold">$1</span>')
+                            .replace(/!!blue\[(.*?)\]!!/g, '<span class="text-blue-400 font-bold">$1</span>')
+                            .replace(/!!orange\[(.*?)\]!!/g, '<span class="text-orange-400 font-bold">$1</span>');
                           return (
                             <span key={i}>
                               <span dangerouslySetInnerHTML={{ __html: processed }} />
@@ -208,16 +315,26 @@ export default function LearnWorkspace() {
           </ScrollArea>
 
           <div className="p-3 border-t border-border/40 flex gap-2 relative z-20">
-            <input
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Ask anything about DSA..."
-              className="flex-1 bg-muted/50 border border-border/50 rounded-lg px-4 py-2 text-sm outline-none focus:border-primary/50 transition-all"
-            />
-            <Button size="icon" onClick={handleSend} disabled={!inputValue.trim() || isTyping} className="shrink-0">
-              <Send className="w-4 h-4" />
-            </Button>
+            {isDiagnosticOpen && (
+              <div className="flex-1 flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/5 border border-primary/20 text-xs text-primary font-bold">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                Complete the Neural Mapping quiz to continue...
+              </div>
+            )}
+            {!isDiagnosticOpen && (
+              <>
+                <input
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                  placeholder="Ask anything about DSA..."
+                  className="flex-1 bg-muted/50 border border-border/50 rounded-lg px-4 py-2 text-sm outline-none focus:border-primary/50 transition-all"
+                />
+                <Button size="icon" onClick={handleSend} disabled={!inputValue.trim() || isTyping} className="shrink-0">
+                  <Send className="w-4 h-4" />
+                </Button>
+              </>
+            )}
           </div>
         </motion.div>
 
@@ -229,6 +346,49 @@ export default function LearnWorkspace() {
         >
           <ScrollArea className="flex-1 pr-2">
             <div className="space-y-4 pb-12">
+              {/* Progress Pipeline */}
+              <AnimatePresence>
+                {pipeline && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="glass-card p-5 shadow-xl border-primary/20"
+                  >
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">⚡ Neural Processing Pipeline</p>
+                    <div className="space-y-3">
+                      {pipeline.map((step, idx) => (
+                        <motion.div
+                          key={step.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.1 }}
+                          className="flex items-center gap-3"
+                        >
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${step.done ? 'bg-green-500' : 'bg-muted/50 border border-white/10'}`}>
+                            {step.done
+                              ? <CheckCircle2 size={12} className="text-white" />
+                              : <div className="w-2 h-2 rounded-full bg-primary/50 animate-pulse" />
+                            }
+                          </div>
+                          <span className={`text-xs font-medium ${step.done ? 'text-green-400' : 'text-muted-foreground'}`}>
+                            {step.label}
+                          </span>
+                          {!step.done && idx === pipeline.findIndex(s => !s.done) && (
+                            <div className="ml-auto flex gap-1">
+                              {[0,1,2].map(i => (
+                                <motion.div key={i} animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                                  className="w-1 h-1 rounded-full bg-primary" />
+                              ))}
+                            </div>
+                          )}
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Dynamic Visualization */}
               {currentD3Data ? (
                 <motion.div 

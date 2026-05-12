@@ -4,7 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import AlgoLab from './pages/AlgoLab';
 import Home from './pages/Home';
-import Login from './pages/Login';
+import Auth from './pages/Auth';
 
 import './App.css';
 
@@ -15,7 +15,8 @@ function App() {
         <Router>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/login" element={<Navigate to="/auth" replace />} />
           
           <Route path="/lab" element={<AlgoLab />} />
           

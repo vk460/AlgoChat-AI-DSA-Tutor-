@@ -65,6 +65,34 @@ export default function AlgoLayout({ children, activeMode, onModeChange, codeCon
     }
   };
 
+  const handleTerminate = async () => {
+    const user = JSON.parse(localStorage.getItem('dsa_mentor_user') || '{}');
+    if (!user.id) {
+        localStorage.removeItem('dsa_mentor_user');
+        window.location.href = '/auth';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/auth/terminate/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: user.id })
+        });
+        if (response.ok) {
+            localStorage.removeItem('dsa_mentor_user');
+            window.location.href = '/auth';
+        }
+    } catch (err) {
+        console.error("Termination failed", err);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('dsa_mentor_user');
+    window.location.href = '/auth';
+  };
+
   return (
     <div className="dashboard-grid bg-background text-foreground selection:bg-primary/30 relative overflow-hidden">
       {/* Dynamic Background Noise/Grid */}
@@ -120,13 +148,12 @@ export default function AlgoLayout({ children, activeMode, onModeChange, codeCon
         </nav>
 
         <div className="p-6 border-t border-white/5 space-y-3">
-           <button className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-muted-foreground text-sm font-bold">
-              <Settings size={18} />
-              {isSidebarOpen && <span>CORE SETTINGS</span>}
-           </button>
-           <button className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-all text-muted-foreground text-sm font-bold">
+           <button 
+              onClick={handleLogout}
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-white/5 transition-all text-primary text-sm font-bold"
+            >
               <LogOut size={18} />
-              {isSidebarOpen && <span>TERMINATE SESSION</span>}
+              {isSidebarOpen && <span>LOGOUT</span>}
            </button>
         </div>
       </motion.aside>
@@ -142,19 +169,17 @@ export default function AlgoLayout({ children, activeMode, onModeChange, codeCon
           </div>
 
           <div className="flex items-center gap-8 ml-10">
-            <div className="flex items-center gap-3 bg-white/[0.03] px-4 py-2 rounded-2xl border border-white/5">
-              <Sparkles className="w-4 h-4 text-warning" />
-              <div className="flex flex-col">
-                <span className="text-[9px] text-muted-foreground uppercase font-black tracking-widest leading-none mb-1">Rank</span>
-                <span className="text-xs font-bold text-foreground leading-none">ARCHITECT</span>
-              </div>
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest leading-none mb-1">Active Sync</span>
+              <span className="text-xs font-bold text-primary leading-none">{JSON.parse(localStorage.getItem('dsa_mentor_user') || '{}').name || 'Student'}</span>
             </div>
             <motion.button 
               whileHover={{ scale: 1.05 }}
+              onClick={handleLogout}
               className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center border border-secondary/20 relative group"
             >
               <div className="absolute inset-0 bg-secondary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-              <User className="text-secondary w-6 h-6 relative z-10" />
+              <LogOut className="text-secondary w-5 h-5 relative z-10" />
             </motion.button>
           </div>
         </header>

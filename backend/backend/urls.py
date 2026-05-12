@@ -28,11 +28,11 @@ urlpatterns = [
     path('', home_view, name='home'),
     path('admin/', admin.site.urls),
     
-    # Auth & Conversations
-    path('api/login/', login_view, name='login'),
-    path('api/login', login_view, name='login_no_slash'),
+    # Auth & Neural State
+    path('api/auth/', include('users.urls')),
+    
+    # Conversations
     path('api/conversations/', get_conversations, name='conversations'),
-    path('api/conversations', get_conversations, name='conversations_no_slash'),
     path('api/messages/<str:session_id>/', get_messages, name='messages'),
     
     # AI Chat / RAG
@@ -72,6 +72,7 @@ urlpatterns = [
     path('assignment/submit/', submit_assignment, name='submit_assignment'),
     
     # New Modular Apps
+    path('api/auth/', include('users.urls')),
     path('api/games/', include('algo_games.urls')),
     path('api/progress/', include('progress.urls')),
 ]

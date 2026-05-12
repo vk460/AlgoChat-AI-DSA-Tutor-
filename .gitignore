@@ -1,5 +1,11 @@
 # Environment variables
 .env
+.env.*
+*.env
+secrets.json
+credentials.json
+*.pem
+*.key
 
 # Python
 __pycache__/

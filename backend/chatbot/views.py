@@ -160,16 +160,24 @@ def ask_rag(request):
                     # We still inject this into the query as fallback context
                     full_query = f"{mistake_context}\n\nStudent Query: {query}"
 
-                # Get answer from RAG pipeline
-                answer = ask_question(full_query, session_id=session_id, custom_history_text=history_text, student_context=student_context)
+                # Get answer from Neural Neural Engine
+                result = ask_question(full_query, session_id=session_id, custom_history_text=history_text, student_context=student_context, user_id=user_id)
             else:
-                answer = ask_question(query, session_id=session_id, custom_history_text=history_text, student_context=student_context)
+                result = ask_question(query, session_id=session_id, custom_history_text=history_text, student_context=student_context, user_id=user_id)
             
+            answer = result["answer"]
+            show_quiz = result.get("show_quiz", False)
+
             Message.objects.create(conversation=conversation, role='user', content=query)
             Message.objects.create(conversation=conversation, role='assistant', content=answer)
             conversation.save()
             
-            return JsonResponse({'answer': answer})
+            return JsonResponse({
+                'answer': answer,
+                'show_quiz': show_quiz,
+                'current_concept': result.get("current_concept", ""),
+                'quiz_data': result.get("quiz_data", [])
+            })
             
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON'}, status=400)

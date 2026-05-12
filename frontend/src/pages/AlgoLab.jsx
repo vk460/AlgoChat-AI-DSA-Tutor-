@@ -12,6 +12,13 @@ export default function AlgoLab() {
   const [activeMode, setActiveMode] = useState('code');
   const [currentCode, setCurrentCode] = useState("");
 
+  const user = JSON.parse(localStorage.getItem('dsa_mentor_user') || 'null');
+
+  if (!user) {
+    window.location.href = '/auth';
+    return null;
+  }
+
   const renderWorkspace = () => {
     switch (activeMode) {
       case 'learn':

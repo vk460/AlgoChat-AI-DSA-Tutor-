@@ -12,3 +12,21 @@ class User(AbstractUser):
         default='python'
     )
     avatar_url = models.URLField(null=True, blank=True)
+
+
+class ConceptHistory(models.Model):
+    """Persistent neural memory: tracks which concepts a user has been quizzed on."""
+    user_id = models.IntegerField(db_index=True)
+    concept = models.CharField(max_length=100)
+    quiz_taken = models.BooleanField(default=False)
+    quiz_score = models.FloatField(default=0.0)
+    mistakes = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user_id', 'concept')
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"User {self.user_id} | {self.concept} | quiz_taken={self.quiz_taken}"

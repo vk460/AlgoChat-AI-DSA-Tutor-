@@ -1,161 +1,150 @@
+import json
+import time
+from typing import TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, END
 from langchain_groq import ChatGroq
-from typing import TypedDict, List
-import json
-import os
+from .prompts.socratic_master_prompt import SOCRATIC_MASTER_PROMPT
 
-# Initialize LLMs
-llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.7)
-llm_fast = ChatGroq(model="llama-3.1-8b-instant", temperature=0.1)
+llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0.7)
+llm_fast = ChatGroq(model_name="llama-3.1-8b-instant", temperature=0.1)
 
 class SocraticState(TypedDict):
-    messages: List[dict]           # Full conversation history
-    student_context: dict          # Built by context_builder
+    messages: List[Dict[str, str]]
     current_concept: str
-    answer_quality: str            # "correct" | "partial" | "wrong"
-    hint_count: int
-    struggled_concepts: List[str]
-    mastered_concepts: List[str]
-    session_complete: bool
-    response: str                  # The latest AI response
+    is_diagnostic: bool
+    diagnostic_index: int
+    concept_history: Dict[str, Any]
+    mistake_dna: Dict[str, Any]
+    response: str
+    show_quiz: bool
+    quiz_data: list  # structured quiz questions, returned directly to frontend
 
-def socratic_question_node(state: SocraticState) -> SocraticState:
-    """Generates the next Socratic question based on student context"""
-    context = state["student_context"]
-    
-    system_prompt = f"""You are AlgoChat's Socratic tutor. Your student is learning {state['current_concept']}.
+def build_dna_node(state: SocraticState):
+    start_time = time.time()
+    print("\n--- [STAGE 1] Message Analysis ---")
+    query = state['messages'][-1]['content']
+    history = state.get("concept_history", {})
 
-STUDENT PROFILE:
-- Name: {context['student_name']}
-- Level: {context['level']}  
-- Language preference: {context['language']}
-- Weak areas in this topic: {context['weak_concepts']}
-- Recent mistakes they made: {context['recent_mistakes']}
-- Persistent weaknesses: {context['persistent_weaknesses']}
+    # STEP 1: Is this a NEW QUESTION or a student ANSWER?
+    # This is the most critical check - answers must NEVER trigger a quiz
+    classification_prompt = f"""You are classifying a student message in a DSA tutoring session.
 
-TEACHING RULES:
-1. NEVER give the answer directly on first message.
-2. Start by asking what they already know.
-3. ONE question at a time.
-4. Reference their specific past mistakes if relevant.
-5. If they show the same mistake from their history, flag it gently.
-6. Keep each response under 4 sentences.
-7. End EVERY message with a question.
-8. Use {context['language']} code examples when needed.
-9. LANGUAGE MIRRORING RULE: 
-   - If the student asks in **English**, you MUST respond in **English**.
-   - If the student asks in **Hindi or Hinglish** (Hindi in Roman script), you MUST respond in **Hinglish**.
-   - Keep technical terms (e.g., 'Array', 'Recursion', 'Time Complexity') in **English** always.
-   - Do NOT mix languages unless the student does.
+Message: "{query}"
 
-Output MUST be a JSON object: {{"response": "...", "concept_being_tested": "..."}}"""
+Classify as:
+A) NEW QUESTION - Student is asking about a new topic to learn (e.g. "What is recursion?", "explain arrays", "how does a stack work", "what is sorting")
+B) ANSWER or FOLLOW-UP - Student is responding to the tutor or giving a short reply (e.g. "I don't know", "yes", "array", "to store data", "at last position")
 
-    # We use a wrapper to ensure JSON format
-    response = llm.invoke([
-        {"role": "system", "content": system_prompt},
-        *state["messages"]
-    ])
-    
-    try:
-        content = json.loads(response.content)
-        return {
-            **state,
-            "response": content.get("response", response.content),
-            "current_concept": content.get("concept_being_tested", state["current_concept"])
-        }
-    except:
-        return {**state, "response": response.content}
+Short single-word or single-phrase messages that look like answers are almost always B.
+Reply with ONLY the letter A or B."""
 
-def evaluate_answer_node(state: SocraticState) -> SocraticState:
-    """Evaluates student answer and categorizes it"""
-    system_prompt = """Evaluate this student answer strictly.
-    Output JSON: {
-      "quality": "correct|partial|wrong",
-      "concept_demonstrated": "...",
-      "specific_gap": "exactly what they got wrong or missed"
-    }"""
-    
-    # We evaluate the last user message
-    user_msg = state["messages"][-1]["content"] if state["messages"] else ""
-    
-    response = llm_fast.invoke([
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_msg}
-    ])
-    
-    try:
-        eval_data = json.loads(response.content)
-        quality = eval_data.get("quality", "wrong")
-        
-        struggled = list(state["struggled_concepts"])
-        mastered = list(state["mastered_concepts"])
-        
-        if quality == "correct":
-            mastered.append(state["current_concept"])
-        else:
-            struggled.append(state["current_concept"])
+    cls_res = llm_fast.invoke(classification_prompt)
+    msg_class = "A" if "A" in cls_res.content.strip().upper()[:3] else "B"
+    print(f"  [DEBUG] Message Type: {'NEW QUESTION' if msg_class == 'A' else 'ANSWER/FOLLOW-UP'}")
 
-        return {
-            **state,
-            "answer_quality": quality,
-            "struggled_concepts": struggled,
-            "mastered_concepts": mastered,
-            "hint_count": state["hint_count"] + 1 if quality != "correct" else 0
-        }
-    except:
-        return {**state, "answer_quality": "wrong"}
+    # Answers and follow-ups go directly to teaching — NEVER trigger quiz
+    if msg_class == "B":
+        print("  [DEBUG] Student answer → Skipping diagnostic, going to teaching")
+        return {**state, "is_diagnostic": False, "show_quiz": False}
 
-def route_after_evaluation(state: SocraticState) -> str:
-    """LangGraph routing — this is the intelligence of the graph"""
-    if state["answer_quality"] == "correct":
-        # If they got it right and we have enough info, complete or move to next
-        if len(state["mastered_concepts"]) >= 3:
-            return "session_complete"
-        return "ask_question"
-    
-    if state["hint_count"] >= 3:
-        return "explain_directly"
-    
-    return "give_hint"
+    # STEP 2: Extract the concept from the NEW question
+    extraction_prompt = f"""From this DSA question: "{query}"
+Extract the single core concept being asked about.
+Return ONLY the concept name (1-3 words). Return 'None' if unclear."""
 
-def hint_node(state: SocraticState) -> SocraticState:
-    """Gives a targeted hint based on the identification of a gap"""
-    system_prompt = f"""Provide a small, helpful Socratic hint for {state['current_concept']}. 
-    DO NOT give the solution.
-    
-    LANGUAGE RULE: If the student has been talking in Hinglish/Hindi, provide the hint in Hinglish (e.g., "Ek baar socho, loop kahan rukna chahiye?").
-    """
-    response = llm.invoke([
-        {"role": "system", "content": system_prompt},
-        *state["messages"]
-    ])
-    return {**state, "response": response.content}
+    concept_res = llm_fast.invoke(extraction_prompt)
+    concept = concept_res.content.strip().lower().replace("*", "").strip(".")
+    # Normalize plurals (arrays→array, stacks→stack)
+    concept = concept.rstrip('s') if concept.endswith('s') and len(concept) > 3 else concept
+    concept = concept.strip()
 
-def session_complete_node(state: SocraticState) -> SocraticState:
-    """Final node — marks session as finished"""
-    return {**state, "session_complete": True, "response": "Great job! You've mastered these concepts. Ready for a quick quiz?"}
+    print(f"  [DEBUG] Concept: '{concept}' (Took: {time.time() - start_time:.2f}s)")
 
-# Build the graph
-workflow = StateGraph(SocraticState)
+    if "none" in concept or not concept or len(concept.split()) > 4:
+        return {**state, "is_diagnostic": False, "show_quiz": False, "current_concept": "General"}
 
-workflow.add_node("ask_question", socratic_question_node)
-workflow.add_node("evaluate_answer", evaluate_answer_node)
-workflow.add_node("give_hint", hint_node)
-workflow.add_node("session_complete", session_complete_node)
+    # STEP 3: Check if this concept has already been quizzed this session
+    is_first = concept not in history or not history[concept].get("quiz_taken", False)
+    if concept not in history:
+        history[concept] = {"quiz_taken": False}
 
-workflow.set_entry_point("ask_question")
-workflow.add_edge("ask_question", "evaluate_answer")
-workflow.add_conditional_edges(
-    "evaluate_answer",
-    route_after_evaluation,
-    {
-        "ask_question": "ask_question",
-        "give_hint": "give_hint",
-        "explain_directly": "ask_question", # Fallback
-        "session_complete": "session_complete"
+    print(f"  [DEBUG] Diagnostic Required? {is_first}")
+
+    return {
+        **state,
+        "is_diagnostic": is_first,
+        "current_concept": concept,
+        "show_quiz": is_first,
+        "concept_history": history
     }
-)
-workflow.add_edge("give_hint", "ask_question")
-workflow.add_edge("session_complete", END)
 
+def diagnostic_node(state: SocraticState):
+    start_time = time.time()
+    concept = state.get("current_concept", "General")
+    print(f"--- [STAGE 2] Generating Foundation Quiz for: {concept} ---")
+
+    prompt = f"""Generate exactly 15 MCQs assessing foundational knowledge of prerequisites for {concept}.
+
+Rules:
+- Output ONLY a valid JSON array.
+- Each item: {{"question": "...", "options": ["A","B","C","D"], "correct": 0, "explanation": "..."}}
+- No extra text, no markdown, just the raw JSON array."""
+
+    res = llm_fast.invoke(prompt)
+    raw = res.content.strip()
+    print(f"  [DEBUG] Quiz Generation Complete (Took: {time.time() - start_time:.2f}s)")
+
+    # Parse quiz directly — no regex needed on frontend
+    quiz_data = []
+    try:
+        # Strip any accidental code fences
+        clean = raw.replace("```json", "").replace("```quiz-json", "").replace("```", "").strip()
+        quiz_data = json.loads(clean)
+        if not isinstance(quiz_data, list):
+            quiz_data = []
+        print(f"  [DEBUG] Quiz parsed successfully: {len(quiz_data)} questions")
+    except Exception as e:
+        print(f"  [DEBUG] Quiz parse error: {e} — raw[:200]: {raw[:200]}")
+
+    history = state.get("concept_history", {})
+    history[concept] = {"quiz_taken": True}
+
+    return {
+        **state,
+        "response": f"Neural Check Initialized for **{concept}**. Starting prerequisite assessment...",
+        "is_diagnostic": True,
+        "show_quiz": True,
+        "quiz_data": quiz_data,
+        "concept_history": history
+    }
+
+def socratic_question_node(state: SocraticState):
+    start_time = time.time()
+    concept = state.get("current_concept", "General")
+    print(f"--- [STAGE 3] Socratic Teaching: {concept} ---")
+
+    prompt = SOCRATIC_MASTER_PROMPT.format(
+        mistake_dna="{}", student_context="{}", current_topic=concept
+    )
+    res = llm.invoke([{"role": "system", "content": prompt}] + state["messages"])
+    print(f"  [DEBUG] Teaching Response Ready (Took: {time.time() - start_time:.2f}s)")
+    return {**state, "response": res.content, "show_quiz": False}
+
+def router(state):
+    if state.get("is_diagnostic", False):
+        return "diagnostic"
+    return "ask_question"
+
+workflow = StateGraph(SocraticState)
+workflow.add_node("build_dna", build_dna_node)
+workflow.add_node("diagnostic", diagnostic_node)
+workflow.add_node("ask_question", socratic_question_node)
+
+workflow.set_entry_point("build_dna")
+workflow.add_conditional_edges("build_dna", router, {
+    "diagnostic": "diagnostic",
+    "ask_question": "ask_question"
+})
+workflow.add_edge("diagnostic", END)
+workflow.add_edge("ask_question", END)
 socratic_app = workflow.compile()
